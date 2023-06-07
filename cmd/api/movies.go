@@ -3,8 +3,10 @@ package main
 import (
 	"fmt"
 	"github.com/julienschmidt/httprouter"
+	"github.com/mailtomainak/greenlight/internal/data"
 	"net/http"
 	"strconv"
+	"time"
 )
 
 func (a *application) createMovieHandler(writer http.ResponseWriter, _ *http.Request) {
@@ -22,5 +24,19 @@ func (a *application) showMovieHandler(writer http.ResponseWriter, request *http
 		writer.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	_, _ = fmt.Fprintf(writer, "Show details of movie -> %d\n", id)
+
+	movie := data.Movie{
+		ID:        id,
+		CreatedAt: time.Now(),
+		Title:     "Casablanca",
+		Runtime:   102,
+		Genres:    []string{"drama", "romance", "war"},
+		Version:   1,
+	}
+
+	err = a.writeJSON(writer, http.StatusOK, envelope{"movie": movie}, nil)
+	if err != nil {
+		a.logger.Println(err)
+		http.Error(writer, "The server encountered a problem", http.StatusInternalServerError)
+	}
 }
