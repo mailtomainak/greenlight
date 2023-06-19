@@ -9,15 +9,15 @@ import (
 	"time"
 )
 
-func (a *application) createMovieHandler(writer http.ResponseWriter, _ *http.Request) {
+func (app *application) createMovieHandler(writer http.ResponseWriter, _ *http.Request) {
 	_, _ = fmt.Fprintln(writer, "create a new movie")
 }
 
-func (a *application) showMovieHandler(writer http.ResponseWriter, request *http.Request) {
+func (app *application) showMovieHandler(writer http.ResponseWriter, request *http.Request) {
 	params := httprouter.ParamsFromContext(request.Context())
 	id, err := strconv.ParseInt(params.ByName("id"), 10, 64)
 	if err != nil {
-		http.NotFound(writer, request)
+		app.notFoundResponse(writer, request)
 		return
 	}
 	if id < 1 {
@@ -34,9 +34,8 @@ func (a *application) showMovieHandler(writer http.ResponseWriter, request *http
 		Version:   1,
 	}
 
-	err = a.writeJSON(writer, http.StatusOK, envelope{"movie": movie}, nil)
+	err = app.writeJSON(writer, http.StatusOK, envelope{"movie": movie}, nil)
 	if err != nil {
-		a.logger.Println(err)
-		http.Error(writer, "The server encountered a problem", http.StatusInternalServerError)
+		app.serverErrorResponse(writer, request, err)
 	}
 }
