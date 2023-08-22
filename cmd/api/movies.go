@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/julienschmidt/httprouter"
 	"github.com/mailtomainak/greenlight/internal/data"
@@ -17,9 +16,10 @@ func (app *application) createMovieHandler(writer http.ResponseWriter, request *
 		Runtime int32    `json:"runtime"`
 		Genres  []string `json:"genres"`
 	}
-	err := json.NewDecoder(request.Body).Decode(&input)
+
+	err := app.readJSON(writer, request, &input)
 	if err != nil {
-		app.errorResponse(writer, request, http.StatusBadRequest, err.Error())
+		app.badRequestResponse(writer, request, err)
 		return
 	}
 	_, _ = fmt.Fprintf(writer, "%+v\n", input)
