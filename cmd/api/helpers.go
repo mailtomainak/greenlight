@@ -25,13 +25,17 @@ func (app *application) writeJSON(w http.ResponseWriter, status int, data interf
 	return nil
 }
 
-func (app *application) readJSON(_ http.ResponseWriter, r *http.Request, obj interface{}) error {
-	err := json.NewDecoder(r.Body).Decode(obj)
+func (app *application) readJSON(w http.ResponseWriter, r *http.Request, obj interface{}) error {
+	maxBytes := 1_048_576
+	r.Body = http.MaxBytesReader(w, r.Body, int64(maxBytes))
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+	err := decoder.Decode(obj)
 	if err != nil {
 		var syntaxErr *json.SyntaxError
 		var unmarshalTypeErr *json.UnmarshalTypeError
 		var invalidUnmarshalErr *json.InvalidUnmarshalError
-
+		var maxBytesErr *http.MaxBytesError
 		switch {
 		case errors.As(err, &syntaxErr):
 			return fmt.Errorf("body contains badly formed JSON (at character %d)", syntaxErr.Offset)
@@ -42,6 +46,9 @@ func (app *application) readJSON(_ http.ResponseWriter, r *http.Request, obj int
 				return fmt.Errorf("body contains incorrect JSON type for field %q", unmarshalTypeErr.Field)
 			}
 			return fmt.Errorf("body contains incorrect JSON type (at character %d)", unmarshalTypeErr.Offset)
+
+		case errors.As(err, &maxBytesErr):
+			return fmt.Errorf("body must not be larger than %d bytes", maxBytes)
 		case errors.Is(err, io.EOF):
 			return errors.New("body must not be empty")
 		case errors.As(err, &invalidUnmarshalErr):
@@ -50,6 +57,10 @@ func (app *application) readJSON(_ http.ResponseWriter, r *http.Request, obj int
 			return err
 
 		}
+	}
+	err = decoder.Decode(&struct{}{})
+	if err != io.EOF {
+		return errors.New("body must only contain a single JSON value")
 	}
 	return nil
 }
