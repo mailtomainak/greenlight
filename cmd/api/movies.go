@@ -2,11 +2,10 @@ package main
 
 import (
 	"fmt"
-	"github.com/julienschmidt/httprouter"
-	"github.com/mailtomainak/greenlight/internal/data"
 	"net/http"
-	"strconv"
 	"time"
+
+	"github.com/mailtomainak/greenlight/internal/data"
 )
 
 func (app *application) createMovieHandler(writer http.ResponseWriter, request *http.Request) {
@@ -26,8 +25,7 @@ func (app *application) createMovieHandler(writer http.ResponseWriter, request *
 }
 
 func (app *application) showMovieHandler(writer http.ResponseWriter, request *http.Request) {
-	params := httprouter.ParamsFromContext(request.Context())
-	id, err := strconv.ParseInt(params.ByName("id"), 10, 64)
+	id, err := app.readIDParam(request)
 	if err != nil {
 		app.notFoundResponse(writer, request)
 		return
